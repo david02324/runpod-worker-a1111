@@ -29,7 +29,8 @@ API_SCHEMA = {
             'sdapi/v1/loras',
             'controlnet/model_list',
             'sdapi/v1/refresh-checkpoints',
-            'sdapi/v1/refresh-loras'
+            'sdapi/v1/refresh-loras',
+            'sdapi/v1/progress'
         ]
     }
 }

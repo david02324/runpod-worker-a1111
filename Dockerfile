@@ -39,7 +39,7 @@ RUN apt update && \
 RUN ln -s /usr/bin/python3.10 /usr/bin/python
 
 # Install Worker dependencies
-RUN pip install requests runpod==0.10.0
+RUN pip install requests redis==4.6.0 runpod==0.10.0
 
 # Add RunPod Handler and Docker container start script
 COPY start.sh rp_handler.py ./
