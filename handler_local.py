@@ -10,7 +10,7 @@ from schemas.img2img import IMG2IMG_SCHEMA
 from schemas.txt2img import TXT2IMG_SCHEMA
 from schemas.options import OPTIONS_SCHEMA
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 import uvicorn
 import uuid
 
@@ -109,7 +109,7 @@ def validate_api(event):
 
     api['endpoint'] = api['endpoint'].lstrip('/')
 
-    return validate(api, API_SCHEMA)
+    return {} # no validation
 
 
 def validate_payload(event):
@@ -206,16 +206,15 @@ done = {}
 cur_task_id = ''
 
 @app.post('/run')
-def run():
-    r = {}
-    r['id'] = uuid.uuid4()
-    r['status'] = 'IN_QUEUE'
+async def run(req: Request):
+    r = await req.json()
+    r['id'] = str(uuid.uuid4())
 
     q.append(r)
 
-    return r.json()
+    return { 'id': r['id'], 'status': 'IN_QUEUE' }
 
-@app.get('/status/{task_id}')
+@app.post('/status/{task_id}')
 def status(task_id):
     if task_id in done:
         return done.pop(task_id)
@@ -234,7 +233,7 @@ def q_checker():
             continue
         
         item = q.pop(0)
-        threading.Thread(target=runner, args=(item,))
+        threading.Thread(target=runner, args=(item,)).start()
 
 def runner(item):
     cur_task_id = item['id']
@@ -247,20 +246,9 @@ def runner(item):
 
 if __name__ == "__main__":
     wait_for_service(url='http://127.0.0.1:3000/sdapi/v1/sd-models')
-    logger.log('Automatic1111 API is ready', 'INFO')
+    print('Automatic1111 API is ready', 'INFO')
 
     threading.Thread(target=q_checker).start()
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
-    
-    # Optional -> header check.
-
-    # /run -> { id, status: IN_QUEUE }
-    # uuid 하나 생성 및 IN_QUEUE 상태로 리턴
-    # 큐에 payload 그대로 저장 및 하나씩 handler 호출해서 처리
-    # { id(생성된 Uuid), input, ... }
-    # 완료 시 딕셔너리에 따로 저장해놔야 status 왔을 때 처리 가능
-
-    # /status/{taskId} -> return { status: IN_QUEUE }
-    # 큐에서 해당 id 있는지 체크해서 확인 -> 없으면 완료 딕셔너리에서 확인
 
