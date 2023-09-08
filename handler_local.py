@@ -1,12 +1,9 @@
 import time
 import requests
-import runpod
 import threading
 import redis
 import json
 import os
-from runpod.serverless.utils.rp_validator import validate
-from runpod.serverless.modules.rp_logger import RunPodLogger
 from requests.adapters import HTTPAdapter, Retry
 from schemas.api import API_SCHEMA
 from schemas.img2img import IMG2IMG_SCHEMA
@@ -24,7 +21,6 @@ TIMEOUT = 600
 session = requests.Session()
 retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504])
 session.mount('http://', HTTPAdapter(max_retries=retries))
-logger = RunPodLogger()
 redis_client = redis.from_url(url=REDIS_URL)
 
 
@@ -44,9 +40,9 @@ def wait_for_service(url):
 
             # Only log every 15 retries so the logs don't get spammed
             if retries % 15 == 0:
-                logger.info('Service not ready yet. Retrying...')
+                print('Service not ready yet. Retrying...')
         except Exception as err:
-            logger.error(f'Error: {err}')
+            print(f'Error: {err}')
 
         time.sleep(0.2)
 
@@ -123,7 +119,7 @@ def validate_payload(event):
     if 'subModels' in event['input']:
         subModels = event['input']['subModels']
     else:
-        logger.log('No subModels')
+        print('No subModels')
 
     payload = event['input']['payload']
     validated_input = payload
@@ -169,7 +165,7 @@ def handler(event):
             name = subModel['name']
             url = subModel['url']
             t = subModel['t']
-            logger.log(f'Downloading {t}/{name} from: {url}')
+            print(f'Downloading {t}/{name} from: {url}')
 
             r = requests.get(url)
 
@@ -190,7 +186,7 @@ def handler(event):
         }
 
     try:
-        logger.log(f'Sending {method} request to: /{endpoint}')
+        print(f'Sending {method} request to: /{endpoint}')
 
         if method == 'GET':
             response = send_get_request(endpoint)
@@ -252,7 +248,6 @@ def runner(item):
 if __name__ == "__main__":
     wait_for_service(url='http://127.0.0.1:3000/sdapi/v1/sd-models')
     logger.log('Automatic1111 API is ready', 'INFO')
-    logger.log('Starting RunPod Serverless...', 'INFO')
 
     threading.Thread(target=q_checker).start()
 
