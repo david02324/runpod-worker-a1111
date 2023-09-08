@@ -216,12 +216,16 @@ async def run(req: Request):
 
 @app.get('/status/{task_id}')
 def status(task_id):
+    global cur_task_id
     if task_id in done:
-        return done.pop(task_id)
+        return { 'id': task_id, 'status': 'COMPLETED', 'output': done.pop(task_id) }
+
+    if cur_task_id == task_id:
+        return { 'id': task_id, 'status': 'IN_PROGRESS' }
 
     for item in q:
         if item["id"] == task_id:
-            return { 'status': 'IN_QUEUE' }
+            return { 'id': task_id, 'status': 'IN_QUEUE' }
         
     return 'Not found'
 
@@ -236,6 +240,7 @@ def q_checker():
         threading.Thread(target=runner, args=(item,)).start()
 
 def runner(item):
+    global cur_task_id
     cur_task_id = item['id']
     print(f'Start job {cur_task_id}')
 
