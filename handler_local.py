@@ -214,7 +214,7 @@ async def run(req: Request):
 
     return { 'id': r['id'], 'status': 'IN_QUEUE' }
 
-@app.post('/status/{task_id}')
+@app.get('/status/{task_id}')
 def status(task_id):
     if task_id in done:
         return done.pop(task_id)
