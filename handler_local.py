@@ -15,7 +15,7 @@ import uvicorn
 import uuid
 
 BASE_URL = 'http://127.0.0.1:3000'
-REDIS_URL= os.environ.get('REDIS_URL')
+
 TIMEOUT = 600
 
 session = requests.Session()
@@ -247,6 +247,13 @@ def runner(item):
     res = handler(item)
 
     done[cur_task_id] = res
+        
+    if 'webhook' in item:
+        session.post(
+            url=item['webhook'],
+            json={ 'id': cur_task_id, 'status': 'COMPLETED', 'output': res },
+        )
+
     cur_task_id = ''
 
 if __name__ == "__main__":
